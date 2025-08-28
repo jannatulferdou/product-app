@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [imageErrors, setImageErrors] = useState({});
 
   useEffect(() => {
     fetch("/api/products")
@@ -28,6 +30,13 @@ export default function Products() {
     const words = text.split(' ');
     if (words.length <= wordLimit) return text;
     return words.slice(0, wordLimit).join(' ') + '...';
+  };
+
+  const handleImageError = (productId) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [productId]: true
+    }));
   };
 
   if (loading) {
@@ -58,16 +67,31 @@ export default function Products() {
             const displayText = isExpanded 
               ? product.description 
               : truncateDescription(product.description, 20);
+            const hasImageError = imageErrors[product.id];
 
             return (
               <div key={product.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group flex flex-col">
                 {/* Product Image */}
                 <div className="relative h-64 overflow-hidden bg-gray-100">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 p-4"
-                  />
+                  {hasImageError ? (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <div className="text-center text-gray-500">
+                        <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm">Image not available</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 p-4"
+                      onError={() => handleImageError(product.id)}
+                      loading="lazy"
+                    />
+                  )}
+                  
                   
                 </div>
 
@@ -134,7 +158,7 @@ export default function Products() {
       <style jsx>{`
         .line-clamp-1 {
           display: -webkit-box;
-          -webkit-line-1: 1;
+          -webkit-line-clamp: 1;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
